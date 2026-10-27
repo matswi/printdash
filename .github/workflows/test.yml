@@ -1,0 +1,19 @@
+name: Tester
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"  # samma som Raspberry Pi OS Bookworm
+      - run: pip install -r requirements-dev.txt
+      - run: node --check app/static/app.js
+      - run: pytest -v
+        env:
+          PRINTDASH_MOCK: "1"

@@ -1,0 +1,24 @@
+[Unit]
+Description=Printdash – webbgränssnitt för CUPS
+After=network-online.target cups.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=printdash
+Group=lpadmin
+WorkingDirectory=/opt/printdash
+EnvironmentFile=-/etc/printdash.env
+ExecStart=/opt/printdash/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8080
+Restart=on-failure
+RestartSec=3
+
+# Härdning
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/run/cups
+
+[Install]
+WantedBy=multi-user.target
