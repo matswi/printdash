@@ -21,7 +21,7 @@ const JOB_LABEL = {
 async function api(path, opts = {}) {
   const res = await fetch(path, { credentials: "same-origin", ...opts });
   let body = null;
-  try { body = await res.json(); } catch { /* tomt svar */ }
+  try { body = await res.json(); } catch { /* empty response */ }
   if (!res.ok) {
     const detail = body && body.detail;
     throw new Error(typeof detail === "string" ? detail : `Fel ${res.status}`);
@@ -30,7 +30,7 @@ async function api(path, opts = {}) {
 }
 const post = (path, body) => api(path, { method: "POST", body });
 
-// --- Hjälpfunktioner ---------------------------------------------------------
+// --- Helpers -----------------------------------------------------------------
 function toast(msg, kind = "") {
   const el = document.createElement("div");
   el.className = `toast ${kind}`;
@@ -67,7 +67,7 @@ function setConn(ok, text) {
   $("#conn-text").textContent = text;
 }
 
-// --- Skrivare ----------------------------------------------------------------
+// --- Printers ----------------------------------------------------------------
 function renderPrinters() {
   const root = $("#printers");
   if (!state.printers.length) {
@@ -157,7 +157,7 @@ document.addEventListener("click", (e) => {
   });
 });
 
-// --- Kö ------------------------------------------------------------------------
+// --- Queue ---------------------------------------------------------------------
 function jobActions(j) {
   const b = (act, label, cls = "") => el("button", { class: `btn btn-ghost ${cls}`, "data-act": act, "data-id": String(j.id) }, label);
   switch (j.state) {
@@ -216,7 +216,7 @@ document.querySelectorAll(".tab").forEach((tab) =>
     refresh();
   }));
 
-// --- Utskriftsformulär ---------------------------------------------------------
+// --- Print form ----------------------------------------------------------------
 const drop = $("#drop");
 const fileInput = $("#file");
 
@@ -242,7 +242,7 @@ drop.addEventListener("drop", (e) => {
   const f = e.dataTransfer.files[0];
   if (f) setFile(f);
 });
-// Släpp fil var som helst på sidan
+// Allow dropping a file anywhere on the page
 window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => {
   e.preventDefault();
@@ -284,7 +284,7 @@ $("#print-form").addEventListener("submit", async (e) => {
   }
 });
 
-// --- Uppdatering ----------------------------------------------------------------
+// --- Polling -------------------------------------------------------------------
 let timer = null;
 let inflight = false;
 

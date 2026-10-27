@@ -1,4 +1,4 @@
-"""Printdash – ett modernt webbgränssnitt för CUPS."""
+"""Printdash – a modern web interface for CUPS."""
 
 from __future__ import annotations
 
@@ -24,8 +24,8 @@ PAGE_RANGES_RE = re.compile(r"^\s*\d+(\s*-\s*\d+)?(\s*,\s*\d+(\s*-\s*\d+)?)*\s*$
 app = FastAPI(title="Printdash", docs_url="/api/docs", redoc_url=None)
 backend = make_backend()
 
-# --- Inloggning (valfri) ----------------------------------------------------
-# Sätt PRINTDASH_PASSWORD för att kräva lösenord. Användarnamnet är valfritt.
+# --- Authentication (optional) ---------------------------------------------
+# Set PRINTDASH_PASSWORD to require a password. Any username is accepted.
 _security = HTTPBasic(auto_error=False)
 
 
@@ -128,7 +128,7 @@ async def print_file(
         job_id = backend.print_file(printer, tmp.name, title, options)
         return {"ok": True, "job_id": job_id}
     finally:
-        # CUPS kopierar filen till sin spool direkt, så den kan tas bort nu
+        # CUPS copies the file to its spool right away, so it can be removed now
         os.unlink(tmp.name)
 
 

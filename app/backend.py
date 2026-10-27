@@ -1,7 +1,7 @@
-"""Backends som pratar med utskriftssystemet.
+"""Backends that talk to the printing system.
 
-CupsBackend använder pycups mot den lokala CUPS-servern.
-MockBackend simulerar en skrivare i minnet, för utveckling utan CUPS.
+CupsBackend uses pycups against the local CUPS server.
+MockBackend simulates printers in memory, for development without CUPS.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import Optional
 
-# CUPS-konstanter (IPP)
+# CUPS constants (IPP)
 PRINTER_STATES = {3: "idle", 4: "processing", 5: "stopped"}
 JOB_STATES = {
     3: "pending",
@@ -28,7 +28,7 @@ ACTIVE_JOB_STATES = {"pending", "held", "processing", "stopped"}
 
 
 class BackendError(Exception):
-    """Fel som ska visas för användaren."""
+    """Error whose message is shown to the user."""
 
 
 @dataclass
@@ -70,7 +70,7 @@ def _printer_from_uri(uri: str) -> str:
 
 
 class CupsBackend:
-    """Riktig backend mot CUPS via pycups."""
+    """Real backend talking to CUPS via pycups."""
 
     JOB_ATTRS = [
         "job-id",
@@ -85,10 +85,10 @@ class CupsBackend:
     ]
 
     def __init__(self) -> None:
-        import cups  # importeras här så att mock-läget fungerar utan pycups
+        import cups  # imported here so mock mode works without pycups
 
         self._cups = cups
-        # pycups-anslutningar är inte trådsäkra
+        # pycups connections are not thread-safe
         self._lock = threading.Lock()
 
     def _conn(self):
@@ -162,7 +162,7 @@ class CupsBackend:
         result.sort(key=lambda j: j.id, reverse=True)
         return result
 
-    # Jobbåtgärder
+    # Job actions
     def cancel_job(self, job_id: int) -> None:
         self._call(lambda c: c.cancelJob(job_id))
 
@@ -178,7 +178,7 @@ class CupsBackend:
     def cancel_all(self, printer: str) -> None:
         self._call(lambda c: c.cancelAllJobs(name=printer))
 
-    # Skrivaråtgärder
+    # Printer actions
     def pause_printer(self, name: str) -> None:
         self._call(lambda c: c.disablePrinter(name))
 
@@ -229,7 +229,7 @@ class _MockPrinter:
 
 
 class MockBackend:
-    """Simulerar CUPS i minnet. Jobb skrivs ut med ca 4 sekunder per sida."""
+    """Simulates CUPS in memory. Jobs print at roughly 4 seconds per page."""
 
     SECONDS_PER_PAGE = 4.0
 
@@ -281,7 +281,7 @@ class MockBackend:
         return job
 
     def _tick(self) -> None:
-        """Låt tiden gå: driv första aktiva jobbet per skrivare framåt."""
+        """Advance time: move the first active job on each printer forward."""
         now = time.monotonic()
         dt = now - self._last_tick
         self._last_tick = now
@@ -295,7 +295,7 @@ class MockBackend:
                 job.progress += dt / (self.SECONDS_PER_PAGE * job.pages)
                 if job.progress >= 1.0:
                     job.progress, job.state, job.completed = 1.0, "completed", int(time.time())
-                break  # en skrivare skriver ett jobb i taget
+                break  # a printer handles one job at a time
 
     def _printer(self, name: str) -> _MockPrinter:
         if name not in self._printers:

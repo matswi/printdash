@@ -1,5 +1,5 @@
 [Unit]
-Description=Printdash – webbgränssnitt för CUPS
+Description=Printdash – web interface for CUPS
 After=network-online.target cups.service
 Wants=network-online.target
 
@@ -13,7 +13,7 @@ ExecStart=/opt/printdash/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 80
 Restart=on-failure
 RestartSec=3
 
-# Härdning
+# Hardening
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true

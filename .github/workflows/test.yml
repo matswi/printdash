@@ -1,4 +1,4 @@
-name: Tester
+name: Tests
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.11"  # samma som Raspberry Pi OS Bookworm
+          python-version: "3.11"  # same as Raspberry Pi OS Bookworm
       - run: pip install -r requirements-dev.txt
       - run: node --check app/static/app.js
       - run: pytest -v

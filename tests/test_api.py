@@ -37,7 +37,7 @@ def test_jobs_filter(client):
 
 
 def test_job_lifecycle(client):
-    jid = client.get("/api/jobs").json()[0]["id"]  # nyaste, väntar
+    jid = client.get("/api/jobs").json()[0]["id"]  # newest, pending
     assert client.post(f"/api/jobs/{jid}/hold").status_code == 200
     assert client.post(f"/api/jobs/{jid}/hold").status_code == 400
     assert client.post(f"/api/jobs/{jid}/release").status_code == 200

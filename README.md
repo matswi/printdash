@@ -1,18 +1,20 @@
 # Printdash
 
-Ett modernt, lättviktigt webbgränssnitt för CUPS. Byggt för en Raspberry Pi som delar en USB-skrivare på nätverket, men fungerar på vilken Linux-maskin som helst med CUPS.
+A modern, lightweight web interface for CUPS. Built for a Raspberry Pi that shares a USB printer on the network, but it works on any Linux machine running CUPS.
 
-- Översikt över skrivare med status i realtid
-- Kö med aktiva jobb och historik: pausa, släpp, avbryt, skriv ut igen
-- Dra och släpp en fil för att skriva ut direkt från webbläsaren eller mobilen
-- Pausa/återuppta skrivare, testsida, byt standardskrivare, töm kö
-- Ljust och mörkt läge, fungerar i mobilen
-- Valfritt lösenord
-- Mock-läge för utveckling utan CUPS
+- Printer overview with live status
+- Queue with active jobs and history: hold, release, cancel, reprint
+- Drag and drop a file to print straight from the browser or your phone
+- Pause/resume printers, print a test page, change the default printer, clear the queue
+- Light and dark mode, works on mobile
+- Optional password
+- Mock mode for development without CUPS
 
-CUPS gör fortfarande allt det tunga (drivrutiner, firmware, IPP-delning). Printdash är bara ett nytt ansikte utåt.
+CUPS still does all the heavy lifting (drivers, firmware, IPP sharing). Printdash is just a new face on top of it.
 
-## Installation på Pi:n
+> The user interface is currently in Swedish.
+
+## Installing on the Pi
 
 ```bash
 git clone https://github.com/matswi/printdash.git
@@ -20,33 +22,33 @@ cd printdash
 sudo ./deploy/install.sh
 ```
 
-Öppna sedan `http://<pi-ip>:8080`.
+Then open `http://<pi-ip>:8080`.
 
-Skriptet installerar `python3-cups`, skapar systemanvändaren `printdash` (medlem i `lpadmin`), lägger appen i `/opt/printdash` och startar den som systemd-tjänst.
+The script installs `python3-cups`, creates the system user `printdash` (a member of `lpadmin`), puts the app in `/opt/printdash` and starts it as a systemd service.
 
-**Uppdatera:** `git pull && sudo ./deploy/install.sh`
+**Updating:** `git pull && sudo ./deploy/install.sh`
 
-### Lösenord
+### Password
 
-Redigera `/etc/printdash.env`:
+Edit `/etc/printdash.env`:
 
 ```
-PRINTDASH_PASSWORD=ditt-lösenord
+PRINTDASH_PASSWORD=your-password
 ```
 
-och kör `sudo systemctl restart printdash`. Webbläsaren frågar då efter inloggning (användarnamnet spelar ingen roll).
+and run `sudo systemctl restart printdash`. The browser will then ask you to log in (any username works).
 
-### Inställningar
+### Settings
 
-| Variabel | Standard | Beskrivning |
+| Variable | Default | Description |
 |---|---|---|
-| `PRINTDASH_PASSWORD` | – | Kräv lösenord om satt |
-| `PRINTDASH_MAX_UPLOAD_MB` | `50` | Största fil som kan laddas upp |
-| `PRINTDASH_MOCK` | – | `1` = simulerad skrivare i stället för CUPS |
+| `PRINTDASH_PASSWORD` | – | Require a password if set |
+| `PRINTDASH_MAX_UPLOAD_MB` | `50` | Largest file that can be uploaded |
+| `PRINTDASH_MOCK` | – | `1` = simulated printers instead of CUPS |
 
-Porten ändras i `deploy/printdash.service`.
+The port is set in `deploy/printdash.service`.
 
-## Utveckling
+## Development
 
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
@@ -54,24 +56,24 @@ pip install -r requirements-dev.txt
 PRINTDASH_MOCK=1 uvicorn app.main:app --reload --port 8080
 ```
 
-Mock-läget simulerar en HP LaserJet 1020 som skriver ut ungefär en sida var fjärde sekund. Kör testerna med `pytest`.
+Mock mode simulates an HP LaserJet 1020 that prints roughly one page every four seconds. Run the tests with `pytest`.
 
-API-dokumentation finns på `/api/docs`.
+API documentation is available at `/api/docs`.
 
-### Struktur
+### Layout
 
 ```
 app/
-  backend.py   CupsBackend (pycups) och MockBackend
-  main.py      FastAPI-routes
-  static/      Frontend (vanilla JS, inget byggsteg)
-deploy/        systemd-tjänst och installationsskript
-tests/         API-tester mot mock-backend
+  backend.py   CupsBackend (pycups) and MockBackend
+  main.py      FastAPI routes
+  static/      Frontend (vanilla JS, no build step)
+deploy/        systemd service and install script
+tests/         API tests against the mock backend
 ```
 
-## Felsökning
+## Troubleshooting
 
-- **"Kunde inte nå CUPS"**: kontrollera att CUPS kör (`systemctl status cups`).
-- **Åtgärder ger "Forbidden"**: kontrollera att `printdash` är medlem i `lpadmin` (`id printdash`) och att `lpadmin` finns under `SystemGroup` i `/etc/cups/cups-files.conf`.
-- **"Skriv ut igen" fungerar inte**: CUPS sparar bara jobbfiler en begränsad tid. Se `PreserveJobFiles` i `/etc/cups/cupsd.conf`.
-- **Loggar**: `journalctl -u printdash -f`
+- **"Kunde inte nå CUPS"** (could not reach CUPS): check that CUPS is running (`systemctl status cups`).
+- **Actions fail with "Forbidden"**: check that `printdash` is a member of `lpadmin` (`id printdash`) and that `lpadmin` is listed under `SystemGroup` in `/etc/cups/cups-files.conf`.
+- **Reprint doesn't work**: CUPS only keeps job files for a limited time. See `PreserveJobFiles` in `/etc/cups/cupsd.conf`.
+- **Logs**: `journalctl -u printdash -f`

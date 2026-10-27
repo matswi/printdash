@@ -1,4 +1,4 @@
 fastapi>=0.110
 uvicorn>=0.29
 python-multipart>=0.0.9
-# pycups installeras via apt på Pi:n (python3-cups), se README
+# pycups is installed via apt on the Pi (python3-cups), see README
