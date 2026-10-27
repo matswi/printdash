@@ -36,7 +36,7 @@ def require_auth(creds: Optional[HTTPBasicCredentials] = Depends(_security)) -> 
     if creds is None or not secrets.compare_digest(creds.password.encode(), password.encode()):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Inloggning krävs",
+            detail="Authentication required",
             headers={"WWW-Authenticate": 'Basic realm="Printdash"'},
         )
 
@@ -102,11 +102,11 @@ async def print_file(
 ):
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in ALLOWED_SUFFIXES:
-        raise HTTPException(400, f"Filtypen stöds inte. Tillåtna: {', '.join(sorted(ALLOWED_SUFFIXES))}")
+        raise HTTPException(400, f"File type not supported. Allowed: {', '.join(sorted(ALLOWED_SUFFIXES))}")
     if not 1 <= copies <= 99:
-        raise HTTPException(400, "Antal kopior måste vara 1–99")
+        raise HTTPException(400, "Copies must be between 1 and 99")
     if page_ranges and not PAGE_RANGES_RE.match(page_ranges):
-        raise HTTPException(400, "Ogiltigt sidintervall, använd t.ex. 1-3,5")
+        raise HTTPException(400, "Invalid page range, use e.g. 1-3,5")
 
     options = {"copies": str(copies)}
     if page_ranges:
@@ -122,9 +122,9 @@ async def print_file(
             while chunk := await file.read(1024 * 1024):
                 size += len(chunk)
                 if size > limit:
-                    raise HTTPException(413, f"Filen är större än {MAX_UPLOAD_MB} MB")
+                    raise HTTPException(413, f"File is larger than {MAX_UPLOAD_MB} MB")
                 tmp.write(chunk)
-        title = file.filename or "Utskrift"
+        title = file.filename or "Print job"
         job_id = backend.print_file(printer, tmp.name, title, options)
         return {"ok": True, "job_id": job_id}
     finally:

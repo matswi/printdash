@@ -100,9 +100,9 @@ class CupsBackend:
                 return fn(self._conn())
             except self._cups.IPPError as e:
                 status, msg = e.args if len(e.args) == 2 else (None, str(e))
-                raise BackendError(msg or f"CUPS-fel {status}") from e
+                raise BackendError(msg or f"CUPS error {status}") from e
             except RuntimeError as e:
-                raise BackendError(f"Kunde inte nå CUPS: {e}") from e
+                raise BackendError(f"Could not reach CUPS: {e}") from e
 
     def list_printers(self) -> list[Printer]:
         def fn(c):
@@ -140,7 +140,7 @@ class CupsBackend:
 
     def list_jobs(self, which: str = "not-completed", limit: int = 50) -> list[Job]:
         if which not in ("not-completed", "completed", "all"):
-            raise BackendError("Ogiltigt urval")
+            raise BackendError("Invalid selection")
         jobs = self._call(
             lambda c: c.getJobs(which_jobs=which, limit=limit, requested_attributes=self.JOB_ATTRS)
         )
@@ -150,7 +150,7 @@ class CupsBackend:
                 Job(
                     id=int(jid),
                     printer=_printer_from_uri(a.get("job-printer-uri", "")),
-                    title=a.get("job-name") or "(utan namn)",
+                    title=a.get("job-name") or "(untitled)",
                     user=a.get("job-originating-user-name", ""),
                     state=JOB_STATES.get(a.get("job-state"), "unknown"),
                     created=a.get("time-at-creation"),
@@ -240,13 +240,13 @@ class MockBackend:
             "LaserJet1020": _MockPrinter(
                 name="LaserJet1020",
                 info="HP LaserJet 1020",
-                location="Kontoret",
+                location="Office",
                 make_and_model="HP LaserJet 1020, hpcups 3.23",
                 device_uri="hp:/usb/HP_LaserJet_1020?serial=FN0ABC123",
             ),
             "PDF": _MockPrinter(
                 name="PDF",
-                info="Skriv till PDF",
+                info="Print to PDF",
                 location="",
                 make_and_model="Generic CUPS-PDF Printer",
                 device_uri="cups-pdf:/",
@@ -257,14 +257,14 @@ class MockBackend:
         self._last_tick = time.monotonic()
         now = int(time.time())
         for title, pages, age in [
-            ("Kvitto_oktober.pdf", 1, 7200),
-            ("Resplan Göteborg.pdf", 3, 3600),
-            ("Recept – kanelbullar", 2, 600),
+            ("Receipt_October.pdf", 1, 7200),
+            ("Travel plan.pdf", 3, 3600),
+            ("Recipe – cinnamon buns", 2, 600),
         ]:
             j = self._new_job("LaserJet1020", title, pages, now - age)
             j.state, j.progress, j.completed = "completed", 1.0, now - age + pages * 4
-        self._new_job("LaserJet1020", "Faktura 2026-118.pdf", 2, now - 5)
-        self._new_job("LaserJet1020", "Biljett.pdf", 1, now - 2)
+        self._new_job("LaserJet1020", "Invoice 2026-118.pdf", 2, now - 5)
+        self._new_job("LaserJet1020", "Ticket.pdf", 1, now - 2)
 
     def _new_job(self, printer: str, title: str, pages: int, created: Optional[int] = None) -> _MockJob:
         jid = next(self._ids)
@@ -299,12 +299,12 @@ class MockBackend:
 
     def _printer(self, name: str) -> _MockPrinter:
         if name not in self._printers:
-            raise BackendError(f"Okänd skrivare: {name}")
+            raise BackendError(f"Unknown printer: {name}")
         return self._printers[name]
 
     def _job(self, job_id: int) -> _MockJob:
         if job_id not in self._jobs:
-            raise BackendError(f"Jobbet {job_id} finns inte")
+            raise BackendError(f"Job {job_id} does not exist")
         return self._jobs[job_id]
 
     def list_printers(self) -> list[Printer]:
@@ -314,10 +314,10 @@ class MockBackend:
             for p in self._printers.values():
                 active = [j for j in self._jobs.values() if j.printer == p.name and j.state in ACTIVE_JOB_STATES]
                 if not p.enabled:
-                    state, msg = "stopped", "Pausad av administratör"
+                    state, msg = "stopped", "Paused by administrator"
                 elif any(j.state == "processing" for j in active):
                     j = next(j for j in active if j.state == "processing")
-                    state, msg = "processing", f"Skriver ut ”{j.title}”"
+                    state, msg = "processing", f"Printing “{j.title}”"
                 else:
                     state, msg = "idle", ""
                 out.append(
@@ -340,7 +340,7 @@ class MockBackend:
 
     def list_jobs(self, which: str = "not-completed", limit: int = 50) -> list[Job]:
         if which not in ("not-completed", "completed", "all"):
-            raise BackendError("Ogiltigt urval")
+            raise BackendError("Invalid selection")
         with self._lock:
             self._tick()
             out = []
@@ -369,28 +369,28 @@ class MockBackend:
         with self._lock:
             j = self._job(job_id)
             if j.state not in ACTIVE_JOB_STATES:
-                raise BackendError("Jobbet är redan avslutat")
+                raise BackendError("Job has already finished")
             j.state, j.completed = "canceled", int(time.time())
 
     def hold_job(self, job_id: int) -> None:
         with self._lock:
             j = self._job(job_id)
             if j.state != "pending":
-                raise BackendError("Bara väntande jobb kan pausas")
+                raise BackendError("Only pending jobs can be held")
             j.state = "held"
 
     def release_job(self, job_id: int) -> None:
         with self._lock:
             j = self._job(job_id)
             if j.state != "held":
-                raise BackendError("Jobbet är inte pausat")
+                raise BackendError("Job is not on hold")
             j.state = "pending"
 
     def restart_job(self, job_id: int) -> None:
         with self._lock:
             j = self._job(job_id)
             if j.state in ACTIVE_JOB_STATES:
-                raise BackendError("Jobbet är fortfarande aktivt")
+                raise BackendError("Job is still active")
             j.state, j.progress, j.completed = "pending", 0.0, None
 
     def cancel_all(self, printer: str) -> None:
@@ -419,13 +419,13 @@ class MockBackend:
     def test_page(self, name: str) -> int:
         with self._lock:
             self._printer(name)
-            return self._new_job(name, "Testsida", 1).id
+            return self._new_job(name, "Test page", 1).id
 
     def print_file(self, printer: str, path: str, title: str, options: dict[str, str]) -> int:
         with self._lock:
             p = self._printer(printer)
             if not p.accepting:
-                raise BackendError("Skrivaren tar inte emot jobb")
+                raise BackendError("Printer is not accepting jobs")
             copies = int(options.get("copies", "1"))
             size = os.path.getsize(path)
             pages = max(1, size // 60_000) * copies

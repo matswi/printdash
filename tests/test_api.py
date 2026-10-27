@@ -45,7 +45,7 @@ def test_job_lifecycle(client):
     job = next(j for j in client.get("/api/jobs?which=completed").json() if j["id"] == jid)
     assert job["state"] == "canceled"
     assert client.post(f"/api/jobs/{jid}/restart").status_code == 200
-    assert client.post("/api/jobs/9999/cancel").json()["detail"].startswith("Jobbet")
+    assert client.post("/api/jobs/9999/cancel").json()["detail"].startswith("Job ")
 
 
 def test_printer_actions(client):
@@ -76,9 +76,9 @@ def test_print_upload(client):
 @pytest.mark.parametrize(
     "data,filename,msg",
     [
-        ({"printer": "LaserJet1020"}, "virus.exe", "Filtypen"),
-        ({"printer": "LaserJet1020", "copies": "0"}, "a.pdf", "kopior"),
-        ({"printer": "LaserJet1020", "page_ranges": "1;rm -rf"}, "a.pdf", "sidintervall"),
+        ({"printer": "LaserJet1020"}, "virus.exe", "File type"),
+        ({"printer": "LaserJet1020", "copies": "0"}, "a.pdf", "Copies"),
+        ({"printer": "LaserJet1020", "page_ranges": "1;rm -rf"}, "a.pdf", "page range"),
     ],
 )
 def test_print_validation(client, data, filename, msg):

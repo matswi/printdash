@@ -12,8 +12,6 @@ A modern, lightweight web interface for CUPS. Built for a Raspberry Pi that shar
 
 CUPS still does all the heavy lifting (drivers, firmware, IPP sharing). Printdash is just a new face on top of it.
 
-> The user interface is currently in Swedish.
-
 ## Installing on the Pi
 
 ```bash
@@ -73,7 +71,7 @@ tests/         API tests against the mock backend
 
 ## Troubleshooting
 
-- **"Kunde inte nå CUPS"** (could not reach CUPS): check that CUPS is running (`systemctl status cups`).
+- **"Could not reach CUPS"**: check that CUPS is running (`systemctl status cups`).
 - **Actions fail with "Forbidden"**: check that `printdash` is a member of `lpadmin` (`id printdash`) and that `lpadmin` is listed under `SystemGroup` in `/etc/cups/cups-files.conf`.
 - **Reprint doesn't work**: CUPS only keeps job files for a limited time. See `PreserveJobFiles` in `/etc/cups/cupsd.conf`.
 - **Logs**: `journalctl -u printdash -f`

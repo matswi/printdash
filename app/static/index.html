@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="sv">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,27 +13,27 @@
     <div class="brand">
       <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v5H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><rect x="3" y="8" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 14h10v7H7z" fill="var(--surface)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="17.5" cy="11.2" r="1" fill="currentColor"/></svg>
       <span>Printdash</span>
-      <span id="mock-badge" class="badge badge-mock" hidden>Mock-läge</span>
+      <span id="mock-badge" class="badge badge-mock" hidden>Mock mode</span>
     </div>
     <div class="conn" id="conn" data-state="connecting">
-      <span class="dot"></span><span id="conn-text">Ansluter…</span>
+      <span class="dot"></span><span id="conn-text">Connecting…</span>
     </div>
   </header>
 
   <main class="layout">
     <section class="col-main">
       <div class="section-head">
-        <h2>Skrivare</h2>
+        <h2>Printers</h2>
       </div>
       <div id="printers" class="printers" aria-live="polite">
         <div class="skeleton card"></div>
       </div>
 
       <div class="section-head">
-        <h2>Kö</h2>
+        <h2>Queue</h2>
         <div class="tabs" role="tablist">
-          <button role="tab" class="tab" data-which="not-completed" aria-selected="true">Aktiva <span class="count" id="active-count"></span></button>
-          <button role="tab" class="tab" data-which="completed" aria-selected="false">Historik</button>
+          <button role="tab" class="tab" data-which="not-completed" aria-selected="true">Active <span class="count" id="active-count"></span></button>
+          <button role="tab" class="tab" data-which="completed" aria-selected="false">History</button>
         </div>
       </div>
       <div id="jobs" class="card jobs"></div>
@@ -41,37 +41,37 @@
 
     <aside class="col-side">
       <form id="print-form" class="card print-card">
-        <h2>Skriv ut</h2>
+        <h2>Print</h2>
         <label class="drop" id="drop">
           <input type="file" id="file" name="file" accept=".pdf,.ps,.txt,.png,.jpg,.jpeg" hidden>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="drop-title" id="drop-title">Släpp en fil här</span>
-          <span class="drop-sub" id="drop-sub">eller klicka för att välja · PDF, bild eller text</span>
+          <span class="drop-title" id="drop-title">Drop a file here</span>
+          <span class="drop-sub" id="drop-sub">or click to choose · PDF, image or text</span>
         </label>
 
         <div class="field">
-          <label for="printer-select">Skrivare</label>
+          <label for="printer-select">Printer</label>
           <select id="printer-select" name="printer" required></select>
         </div>
         <div class="field-row">
           <div class="field">
-            <label for="copies">Kopior</label>
+            <label for="copies">Copies</label>
             <div class="stepper">
-              <button type="button" data-step="-1" aria-label="Färre">−</button>
+              <button type="button" data-step="-1" aria-label="Fewer">−</button>
               <input id="copies" name="copies" type="number" min="1" max="99" value="1" inputmode="numeric">
-              <button type="button" data-step="1" aria-label="Fler">+</button>
+              <button type="button" data-step="1" aria-label="More">+</button>
             </div>
           </div>
           <div class="field">
-            <label for="page-ranges">Sidor</label>
-            <input id="page-ranges" name="page_ranges" placeholder="Alla, t.ex. 1-3,5" autocomplete="off">
+            <label for="page-ranges">Pages</label>
+            <input id="page-ranges" name="page_ranges" placeholder="All, e.g. 1-3,5" autocomplete="off">
           </div>
         </div>
         <label class="check">
           <input type="checkbox" name="fit_to_page" value="true">
-          <span>Anpassa till sidan</span>
+          <span>Fit to page</span>
         </label>
-        <button type="submit" class="btn btn-primary btn-block" id="print-btn" disabled>Skriv ut</button>
+        <button type="submit" class="btn btn-primary btn-block" id="print-btn" disabled>Print</button>
       </form>
     </aside>
   </main>
@@ -85,7 +85,7 @@
           <svg viewBox="0 0 24 24"><path d="M7 3h10v5H7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><rect x="3" y="8" width="18" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 14h10v7H7z" fill="var(--surface-2)" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
         </div>
         <div class="printer-title">
-          <h3><span class="p-name"></span> <span class="badge p-default" hidden>Standard</span></h3>
+          <h3><span class="p-name"></span> <span class="badge p-default" hidden>Default</span></h3>
           <p class="muted p-sub"></p>
         </div>
         <span class="pill p-state"></span>
@@ -95,12 +95,12 @@
         <span class="muted p-queue"></span>
         <div class="actions">
           <button class="btn btn-ghost" data-act="toggle"></button>
-          <button class="btn btn-ghost" data-act="testpage">Testsida</button>
+          <button class="btn btn-ghost" data-act="testpage">Test page</button>
           <details class="menu">
-            <summary class="btn btn-ghost btn-icon" aria-label="Fler val">⋯</summary>
+            <summary class="btn btn-ghost btn-icon" aria-label="More options">⋯</summary>
             <div class="menu-pop">
-              <button data-act="default">Gör till standard</button>
-              <button data-act="cancel-all" class="danger">Töm kön</button>
+              <button data-act="default">Make default</button>
+              <button data-act="cancel-all" class="danger">Clear queue</button>
             </div>
           </details>
         </div>

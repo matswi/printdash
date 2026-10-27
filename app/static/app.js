@@ -11,10 +11,10 @@ const state = {
   busy: false,
 };
 
-const PRINTER_LABEL = { idle: "Redo", processing: "Skriver ut", stopped: "Pausad", unknown: "Okänd" };
+const PRINTER_LABEL = { idle: "Ready", processing: "Printing", stopped: "Paused", unknown: "Unknown" };
 const JOB_LABEL = {
-  pending: "Väntar", held: "Pausad", processing: "Skriver ut", stopped: "Stoppad",
-  canceled: "Avbruten", aborted: "Misslyckad", completed: "Klar", unknown: "Okänd",
+  pending: "Pending", held: "On hold", processing: "Printing", stopped: "Stopped",
+  canceled: "Canceled", aborted: "Failed", completed: "Done", unknown: "Unknown",
 };
 
 // --- API -------------------------------------------------------------------
@@ -24,7 +24,7 @@ async function api(path, opts = {}) {
   try { body = await res.json(); } catch { /* empty response */ }
   if (!res.ok) {
     const detail = body && body.detail;
-    throw new Error(typeof detail === "string" ? detail : `Fel ${res.status}`);
+    throw new Error(typeof detail === "string" ? detail : `Error ${res.status}`);
   }
   return body;
 }
@@ -39,16 +39,16 @@ function toast(msg, kind = "") {
   setTimeout(() => el.remove(), kind === "error" ? 6000 : 3000);
 }
 
-const rtf = new Intl.RelativeTimeFormat("sv", { numeric: "auto" });
+const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 function ago(ts) {
   if (!ts) return "";
   const s = Math.round(ts - Date.now() / 1000);
   const abs = Math.abs(s);
-  if (abs < 45) return "nyss";
+  if (abs < 45) return "just now";
   if (abs < 3600) return rtf.format(Math.round(s / 60), "minute");
   if (abs < 86400) return rtf.format(Math.round(s / 3600), "hour");
   if (abs < 86400 * 7) return rtf.format(Math.round(s / 86400), "day");
-  return new Date(ts * 1000).toLocaleDateString("sv-SE");
+  return new Date(ts * 1000).toLocaleDateString();
 }
 
 function el(tag, attrs = {}, ...children) {
@@ -72,8 +72,8 @@ function renderPrinters() {
   const root = $("#printers");
   if (!state.printers.length) {
     root.replaceChildren(el("div", { class: "card empty" },
-      el("strong", {}, "Inga skrivare hittades"),
-      "Lägg till en skrivare i CUPS så dyker den upp här."));
+      el("strong", {}, "No printers found"),
+      "Add a printer in CUPS and it will show up here."));
     return;
   }
   const tpl = $("#printer-tpl");
@@ -90,9 +90,9 @@ function renderPrinters() {
     const msg = [p.state_message, ...p.state_reasons.map(humanReason)].filter(Boolean).join(" · ");
     $(".p-message", node).textContent = msg;
     $(".p-queue", node).textContent =
-      p.active_jobs === 0 ? "Kön är tom" : p.active_jobs === 1 ? "1 jobb i kön" : `${p.active_jobs} jobb i kön`;
+      p.active_jobs === 0 ? "Queue is empty" : p.active_jobs === 1 ? "1 job in queue" : `${p.active_jobs} jobs in queue`;
     const toggle = $('[data-act="toggle"]', node);
-    toggle.textContent = p.state === "stopped" ? "Återuppta" : "Pausa";
+    toggle.textContent = p.state === "stopped" ? "Resume" : "Pause";
     toggle.dataset.act = p.state === "stopped" ? "resume" : "pause";
     $('[data-act="default"]', node).hidden = p.is_default;
     $('[data-act="cancel-all"]', node).disabled = p.active_jobs === 0;
@@ -105,14 +105,14 @@ function renderPrinters() {
 function humanReason(r) {
   const base = r.replace(/-(report|warning|error)$/, "");
   const map = {
-    "media-empty": "Slut på papper",
-    "media-jam": "Papperstrassel",
-    "toner-low": "Lite toner",
-    "toner-empty": "Slut på toner",
-    "door-open": "Luckan är öppen",
-    "offline": "Inte ansluten",
+    "media-empty": "Out of paper",
+    "media-jam": "Paper jam",
+    "toner-low": "Toner low",
+    "toner-empty": "Out of toner",
+    "door-open": "Door open",
+    "offline": "Not connected",
     "paused": "",
-    "cups-missing-filter": "Drivrutin saknas",
+    "cups-missing-filter": "Driver missing",
   };
   return base in map ? map[base] : r;
 }
@@ -135,13 +135,13 @@ $("#printers").addEventListener("click", async (e) => {
   const name = btn.closest("[data-name]").dataset.name;
   const act = btn.dataset.act;
   btn.closest("details")?.removeAttribute("open");
-  if (act === "cancel-all" && !confirm("Avbryt alla jobb i kön för den här skrivaren?")) return;
+  if (act === "cancel-all" && !confirm("Cancel all queued jobs for this printer?")) return;
   btn.disabled = true;
   try {
     await post(`/api/printers/${encodeURIComponent(name)}/${act}`);
     const msg = {
-      pause: "Skrivaren är pausad", resume: "Skrivaren är igång igen",
-      testpage: "Testsida skickad", default: "Ny standardskrivare", "cancel-all": "Kön är tömd",
+      pause: "Printer paused", resume: "Printer resumed",
+      testpage: "Test page sent", default: "Default printer changed", "cancel-all": "Queue cleared",
     }[act];
     toast(msg);
   } catch (err) {
@@ -161,11 +161,11 @@ document.addEventListener("click", (e) => {
 function jobActions(j) {
   const b = (act, label, cls = "") => el("button", { class: `btn btn-ghost ${cls}`, "data-act": act, "data-id": String(j.id) }, label);
   switch (j.state) {
-    case "pending": return [b("hold", "Pausa"), b("cancel", "Avbryt", "danger")];
-    case "held": return [b("release", "Släpp"), b("cancel", "Avbryt", "danger")];
+    case "pending": return [b("hold", "Hold"), b("cancel", "Cancel", "danger")];
+    case "held": return [b("release", "Release"), b("cancel", "Cancel", "danger")];
     case "processing":
-    case "stopped": return [b("cancel", "Avbryt", "danger")];
-    default: return [b("restart", "Skriv ut igen")];
+    case "stopped": return [b("cancel", "Cancel", "danger")];
+    default: return [b("restart", "Reprint")];
   }
 }
 
@@ -173,15 +173,15 @@ function renderJobs(jobs) {
   const root = $("#jobs");
   if (!jobs.length) {
     root.replaceChildren(state.which === "not-completed"
-      ? el("div", { class: "empty" }, el("strong", {}, "Inget i kön"), "Allt är utskrivet.")
-      : el("div", { class: "empty" }, el("strong", {}, "Ingen historik än"), "Avslutade jobb visas här."));
+      ? el("div", { class: "empty" }, el("strong", {}, "Queue is empty"), "Everything has been printed.")
+      : el("div", { class: "empty" }, el("strong", {}, "No history yet"), "Finished jobs show up here."));
     return;
   }
   const printerName = (n) => state.printers.find((p) => p.name === n)?.info || n;
   const rows = jobs.map((j) => {
     const when = j.state === "completed" || j.state === "canceled" || j.state === "aborted"
       ? ago(j.completed || j.created) : ago(j.created);
-    const pages = j.state === "processing" && j.pages_done ? `${j.pages_done} sid. klara` : "";
+    const pages = j.state === "processing" && j.pages_done ? `${j.pages_done} pages done` : "";
     const meta = [printerName(j.printer), j.user, when, pages, `#${j.id}`].filter(Boolean).join(" · ");
     return el("div", { class: "job" },
       el("div", { class: "job-info" },
@@ -199,7 +199,7 @@ $("#jobs").addEventListener("click", async (e) => {
   btn.disabled = true;
   try {
     await post(`/api/jobs/${btn.dataset.id}/${btn.dataset.act}`);
-    const msg = { cancel: "Jobbet avbröts", hold: "Jobbet pausades", release: "Jobbet släpptes", restart: "Jobbet skickas igen" }[btn.dataset.act];
+    const msg = { cancel: "Job canceled", hold: "Job put on hold", release: "Job released", restart: "Job resubmitted" }[btn.dataset.act];
     toast(msg);
   } catch (err) {
     toast(err.message, "error");
@@ -223,10 +223,10 @@ const fileInput = $("#file");
 function setFile(file) {
   state.file = file || null;
   drop.classList.toggle("has-file", !!file);
-  $("#drop-title").textContent = file ? file.name : "Släpp en fil här";
+  $("#drop-title").textContent = file ? file.name : "Drop a file here";
   $("#drop-sub").textContent = file
-    ? `${(file.size / 1024 / 1024).toFixed(file.size > 1024 * 1024 ? 1 : 2)} MB · klicka för att byta`
-    : "eller klicka för att välja · PDF, bild eller text";
+    ? `${(file.size / 1024 / 1024).toFixed(file.size > 1024 * 1024 ? 1 : 2)} MB · click to change`
+    : "or click to choose · PDF, image or text";
   updatePrintButton();
 }
 
@@ -265,11 +265,11 @@ $("#print-form").addEventListener("submit", async (e) => {
   if (!form.get("fit_to_page")) form.set("fit_to_page", "false");
   state.busy = true;
   const btn = $("#print-btn");
-  btn.textContent = "Skickar…";
+  btn.textContent = "Sending…";
   updatePrintButton();
   try {
     const res = await post("/api/print", form);
-    toast(`Skickat till skrivaren (jobb #${res.job_id})`);
+    toast(`Sent to printer (job #${res.job_id})`);
     fileInput.value = "";
     setFile(null);
     e.target.reset();
@@ -278,7 +278,7 @@ $("#print-form").addEventListener("submit", async (e) => {
     toast(err.message, "error");
   } finally {
     state.busy = false;
-    btn.textContent = "Skriv ut";
+    btn.textContent = "Print";
     updatePrintButton();
     refresh();
   }
@@ -303,9 +303,9 @@ async function refresh() {
     renderJobs(jobs);
     const n = (active || jobs).length;
     $("#active-count").textContent = n ? String(n) : "";
-    setConn(true, "Ansluten");
+    setConn(true, "Connected");
   } catch (err) {
-    setConn(false, "Ingen kontakt med servern");
+    setConn(false, "Can't reach the server");
   } finally {
     inflight = false;
   }
