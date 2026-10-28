@@ -21,3 +21,4 @@ Printdash is a small web interface for CUPS, meant to run on a Raspberry Pi that
 - **Tests:** new API behaviour should come with a test in `tests/` that runs against `MockBackend`.
 
 All text, including UI strings, comments and docs, is in English.
+When settings, environment variables or deployment steps change, the README should be updated in the same PR.
